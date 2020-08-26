@@ -1,0 +1,15 @@
+{
+	"server": "regulus.cotuca.unicamp.br",
+	"authentication": {
+		"type": "default",
+		"options": {
+			"userName": "BD19191",
+			"password": "senha123%"
+		}
+	},
+	"options": {
+		"database": "BD19191",
+		"encrypt": false,
+		"enableArithAbort": true
+	}
+}
