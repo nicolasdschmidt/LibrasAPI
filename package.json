@@ -1,26 +1,27 @@
 {
-  "name": "libras-api",
-  "version": "1.0.0",
-  "description": "API para o app de Libras",
-  "main": "index.js",
-  "scripts": {
-    "test": "node index.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/nicolasdschmidt/LibrasAPI.git"
-  },
-  "keywords": [
-    "api"
-  ],
-  "author": "nicolasdschmidt, NicolasM3",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/nicolasdschmidt/LibrasAPI/issues"
-  },
-  "homepage": "https://github.com/nicolasdschmidt/LibrasAPI#readme",
-  "dependencies": {
-    "express": "^4.17.1",
-    "mssql": "^6.2.1"
-  }
+	"name": "libras-api",
+	"version": "1.0.0",
+	"description": "API para o app de Libras",
+	"main": "index.js",
+	"scripts": {
+		"test": "node index.js"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/nicolasdschmidt/LibrasAPI.git"
+	},
+	"keywords": [
+		"api"
+	],
+	"author": "nicolasdschmidt, NicolasM3",
+	"license": "ISC",
+	"bugs": {
+		"url": "https://github.com/nicolasdschmidt/LibrasAPI/issues"
+	},
+	"homepage": "https://github.com/nicolasdschmidt/LibrasAPI#readme",
+	"dependencies": {
+		"body-parser": "^1.19.0",
+		"express": "^4.17.1",
+		"mssql": "^6.2.1"
+	}
 }
