@@ -156,13 +156,37 @@ app.post('/login', (req, res) => {
 		)
 })
 
+app.post('/avancar', (req, res) => {
+	let username = req.body.username
+	let password = req.body.password
+
+	pool.request()
+		.input('username', sql.NVarChar(20), username)
+		.input('password', sql.NVarChar(50), password)
+		.query(
+			"declare @responseMessage nvarchar(250); exec libras.avancar @pUsername = @username, @pPassword = @password, @responseMessage = @responseMessage output; select @responseMessage as N'responseMessage'",
+			(err, sqlRes) => {
+				if (err) res.status(500).send(err)
+				else {
+					let responseMessage = sqlRes.recordset[0].responseMessage
+
+					if (responseMessage == 'OK') res.sendStatus(200)
+					else if (responseMessage == 'Falha de autenticação')
+						res.status(401).send(responseMessage)
+				}
+			}
+		)
+})
+
 app.post('/cadastro', (req, res) => {
 	let username = req.body.username
 	let fullName = req.body.fullName
 	let password = req.body.password
 
-	if (password.length < 8)
+	if (password.length < 8) {
 		res.status(422).send('Senha deve ter pelo menos 8 caracteres')
+		return
+	}
 
 	pool.request()
 		.input('username', sql.NVarChar(20), username)
@@ -175,14 +199,19 @@ app.post('/cadastro', (req, res) => {
 				else {
 					let responseMessage = sqlRes.recordset[0].responseMessage
 
-					if (responseMessage == 'OK') res.sendStatus(200)
+					let resString = responseMessage + ''
+
+					console.log(responseMessage)
+					console.log(resString)
+
+					if (resString == 'OK') res.sendStatus(200)
 					else if (
-						responseMessage.includes(
+						resString.startsWith(
 							'Violation of UNIQUE KEY constraint'
 						)
 					)
 						res.status(409).send('Nome de usuário já existe')
-					else res.status(401).send(responseMessage)
+					else res.status(401).send(resString)
 				}
 			}
 		)
