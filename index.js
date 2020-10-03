@@ -3,6 +3,8 @@ const sql = require('mssql')
 const bodyparser = require('body-parser')
 const fs = require('fs')
 
+const SEND_CLIENT_ERROR = false
+
 const app = express()
 const port = 80
 
@@ -44,18 +46,37 @@ app.get('/usuarios/*/nivel/', (req, res) => {
 		.replace('/nivel', '')
 		.trim()
 
-	console.log(usuario)
-
 	pool.request()
 		.input('usuario', sql.VarChar(20), usuario)
 		.query(
-			'select * from libras.UsuarioLicao where usuario = @usuario',
+			'select licao from libras.UsuarioLicao where usuario = @usuario',
 			(err, sqlRes) => {
 				if (err) res.status(500).send(err)
 				else
 					res.status(200).send({
 						linhas: sqlRes.rowsAffected[0],
-						resultado: sqlRes.recordset,
+						resultado: sqlRes.recordset[0],
+					})
+			}
+		)
+})
+
+app.get('/usuarios/*/licoes', (req, res) => {
+	let usuario = req.url
+		.replace('/usuarios/', '')
+		.replace('/licoes', '')
+		.trim()
+
+	pool.request()
+		.input('usuario', sql.VarChar(20), usuario)
+		.query(
+			'select * from libras.Licao where codigo <= (select licao from libras.UsuarioLicao where usuario = @usuario)',
+			(err, sqlRes) => {
+				if (err) res.status(500).send(err)
+				else
+					res.status(200).send({
+						linhas: sqlRes.rowsAffected[0],
+						resultado: sqlRes.recordset[0],
 					})
 			}
 		)
@@ -105,20 +126,6 @@ app.get('/licoes', (req, res) => {
 app.get('/licoes/*', (req, res) => {
 	let licao = parseInt(req.url.replace('/licoes/', '').trim())
 
-	/*pool.request()
-		.input('licao', sql.Int, licao)
-		.query(
-			'select * from libras.Licao where codigo = @licao',
-			(err, sqlRes) => {
-				if (err) res.status(500).send(err)
-				else
-					res.status(200).send({
-						linhas: sqlRes.rowsAffected[0],
-						resultado: sqlRes.recordset,
-					})
-			}
-        )*/
-
 	pool.request()
 		.input('licao', sql.Int, licao)
 		.query(
@@ -135,6 +142,7 @@ app.get('/licoes/*', (req, res) => {
 })
 
 app.post('/login', (req, res) => {
+	console.log(req.headers)
 	let username = req.body.username
 	let password = req.body.password
 
@@ -150,7 +158,9 @@ app.post('/login', (req, res) => {
 
 					if (responseMessage == 'OK') res.sendStatus(200)
 					else if (responseMessage == 'Usuário ou senha incorretos')
-						res.status(401).send(responseMessage)
+						if (SEND_CLIENT_ERROR)
+							res.status(401).send(responseMessage)
+						else res.status(200).send({ err: responseMessage })
 				}
 			}
 		)
@@ -172,7 +182,9 @@ app.post('/avancar', (req, res) => {
 
 					if (responseMessage == 'OK') res.sendStatus(200)
 					else if (responseMessage == 'Falha de autenticação')
-						res.status(401).send(responseMessage)
+						if (SEND_CLIENT_ERROR)
+							res.status(401).send(responseMessage)
+						else res.status(200).send({ err: responseMessage })
 				}
 			}
 		)
@@ -184,7 +196,12 @@ app.post('/cadastro', (req, res) => {
 	let password = req.body.password
 
 	if (password.length < 8) {
-		res.status(422).send('Senha deve ter pelo menos 8 caracteres')
+		if (SEND_CLIENT_ERROR)
+			res.status(422).send('Senha deve ter pelo menos 8 caracteres')
+		else
+			res.status(200).send({
+				err: 'Senha deve ter pelo menos 8 caracteres',
+			})
 		return
 	}
 
@@ -210,8 +227,16 @@ app.post('/cadastro', (req, res) => {
 							'Violation of UNIQUE KEY constraint'
 						)
 					)
-						res.status(409).send('Nome de usuário já existe')
-					else res.status(401).send(resString)
+						if (SEND_CLIENT_ERROR)
+							res.status(409).send('Nome de usuário já existe')
+						else
+							res.status(200).send({
+								err: 'Nome de usuário já existe',
+							})
+					else {
+						if (SEND_CLIENT_ERROR) res.status(401).send(resString)
+						else res.status(200).send({ err: resString })
+					}
 				}
 			}
 		)
