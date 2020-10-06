@@ -17,11 +17,15 @@ pool.connect((err) => {
 
 app.use(bodyparser.json())
 
-app.get('/', (req, res) => res.sendStatus(200))
+app.get('/', (req, res) => {
+	if (SEND_CLIENT_ERROR) res.sendStatus(200)
+	else res.status(200).send({ status: 200 })
+})
 
 app.get('/usuarios', (req, res) => {
+	console.log(req.body)
 	pool.request().query('select * from libras.Usuario', (err, sqlRes) => {
-		if (err) res.status(500).send(err)
+		if (err) res.status(500).send({ status: 500, err: err })
 		else {
 			let usuariosRetorno = []
 			sqlRes.recordset.forEach((usuario) => {
@@ -51,7 +55,7 @@ app.get('/usuarios/*/nivel/', (req, res) => {
 		.query(
 			'select licao from libras.UsuarioLicao where usuario = @usuario',
 			(err, sqlRes) => {
-				if (err) res.status(500).send(err)
+				if (err) res.status(500).send({ status: 500, err: err })
 				else
 					res.status(200).send({
 						linhas: sqlRes.rowsAffected[0],
@@ -72,7 +76,7 @@ app.get('/usuarios/*/licoes', (req, res) => {
 		.query(
 			'select * from libras.Licao where codigo <= (select licao from libras.UsuarioLicao where usuario = @usuario)',
 			(err, sqlRes) => {
-				if (err) res.status(500).send(err)
+				if (err) res.status(500).send({ status: 500, err: err })
 				else
 					res.status(200).send({
 						linhas: sqlRes.rowsAffected[0],
@@ -89,7 +93,7 @@ app.get('/usuarios/*', (req, res) => {
 		.query(
 			'select * from libras.Usuario where userId = @id',
 			(err, sqlRes) => {
-				if (err) res.status(500).send(err)
+				if (err) res.status(500).send({ status: 500, err: err })
 				else {
 					if (sqlRes.rowsAffected[0] > 0) {
 						let usuarioRetorno = {
@@ -114,7 +118,7 @@ app.get('/usuarios/*', (req, res) => {
 
 app.get('/licoes', (req, res) => {
 	pool.request().query('select * from libras.Licao', (err, sqlRes) => {
-		if (err) res.status(500).send(err)
+		if (err) res.status(500).send({ status: 500, err: err })
 		else
 			res.status(200).send({
 				linhas: sqlRes.rowsAffected[0],
@@ -131,7 +135,7 @@ app.get('/licoes/*', (req, res) => {
 		.query(
 			'select * from libras.LicaoSubLicao where licao = @licao',
 			(err, sqlRes) => {
-				if (err) res.status(500).send(err)
+				if (err) res.status(500).send({ status: 500, err: err })
 				else
 					res.status(200).send({
 						linhas: sqlRes.rowsAffected[0],
@@ -152,15 +156,21 @@ app.post('/login', (req, res) => {
 		.query(
 			"declare @responseMessage nvarchar(250); exec libras.authUser @pUsername = @username, @pPassword = @password, @responseMessage = @responseMessage output; select @responseMessage as N'responseMessage'",
 			(err, sqlRes) => {
-				if (err) res.status(500).send(err)
+				if (err) res.status(500).send({ status: 500, err: err })
 				else {
 					let responseMessage = sqlRes.recordset[0].responseMessage
 
-					if (responseMessage == 'OK') res.sendStatus(200)
-					else if (responseMessage == 'Usuário ou senha incorretos')
+					if (responseMessage == 'OK') {
+						if (SEND_CLIENT_ERROR) res.sendStatus(200)
+						else res.status(200).send({ status: 200 })
+					} else if (responseMessage == 'Usuário ou senha incorretos')
 						if (SEND_CLIENT_ERROR)
 							res.status(401).send(responseMessage)
-						else res.status(200).send({ err: responseMessage })
+						else
+							res.status(200).send({
+								status: 401,
+								err: responseMessage,
+							})
 				}
 			}
 		)
@@ -176,15 +186,21 @@ app.post('/avancar', (req, res) => {
 		.query(
 			"declare @responseMessage nvarchar(250); exec libras.avancar @pUsername = @username, @pPassword = @password, @responseMessage = @responseMessage output; select @responseMessage as N'responseMessage'",
 			(err, sqlRes) => {
-				if (err) res.status(500).send(err)
+				if (err) res.status(500).send({ status: 500, err: err })
 				else {
 					let responseMessage = sqlRes.recordset[0].responseMessage
 
-					if (responseMessage == 'OK') res.sendStatus(200)
-					else if (responseMessage == 'Falha de autenticação')
+					if (responseMessage == 'OK') {
+						if (SEND_CLIENT_ERROR) res.sendStatus(200)
+						else res.status(200).send({ status: 200 })
+					} else if (responseMessage == 'Falha de autenticação')
 						if (SEND_CLIENT_ERROR)
 							res.status(401).send(responseMessage)
-						else res.status(200).send({ err: responseMessage })
+						else
+							res.status(200).send({
+								status: 401,
+								err: responseMessage,
+							})
 				}
 			}
 		)
@@ -200,6 +216,7 @@ app.post('/cadastro', (req, res) => {
 			res.status(422).send('Senha deve ter pelo menos 8 caracteres')
 		else
 			res.status(200).send({
+				status: 422,
 				err: 'Senha deve ter pelo menos 8 caracteres',
 			})
 		return
@@ -212,7 +229,7 @@ app.post('/cadastro', (req, res) => {
 		.query(
 			"declare @responseMessage nvarchar(250); exec libras.addUser @pUsername = @username, @pFullName = @fullName, @pPassword = @password, @responseMessage = @responseMessage output; select @responseMessage as N'responseMessage'",
 			(err, sqlRes) => {
-				if (err) res.status(500).send(err)
+				if (err) res.status(500).send({ status: 500, err: err })
 				else {
 					let responseMessage = sqlRes.recordset[0].responseMessage
 
@@ -221,8 +238,10 @@ app.post('/cadastro', (req, res) => {
 					console.log(responseMessage)
 					console.log(resString)
 
-					if (resString == 'OK') res.sendStatus(200)
-					else if (
+					if (resString == 'OK') {
+						if (SEND_CLIENT_ERROR) res.sendStatus(200)
+						else res.status(200).send({ status: 200 })
+					} else if (
 						resString.startsWith(
 							'Violation of UNIQUE KEY constraint'
 						)
@@ -231,11 +250,16 @@ app.post('/cadastro', (req, res) => {
 							res.status(409).send('Nome de usuário já existe')
 						else
 							res.status(200).send({
+								status: 409,
 								err: 'Nome de usuário já existe',
 							})
 					else {
 						if (SEND_CLIENT_ERROR) res.status(401).send(resString)
-						else res.status(200).send({ err: resString })
+						else
+							res.status(200).send({
+								status: 401,
+								err: resString,
+							})
 					}
 				}
 			}
