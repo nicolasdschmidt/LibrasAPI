@@ -23,7 +23,6 @@ app.get('/', (req, res) => {
 })
 
 app.get('/usuarios', (req, res) => {
-	console.log(req.body)
 	pool.request().query('select * from libras.Usuario', (err, sqlRes) => {
 		if (err) res.status(500).send({ status: 500, err: err })
 		else {
@@ -116,6 +115,17 @@ app.get('/usuarios/*', (req, res) => {
 		)
 })
 
+app.get('/categorias', (req, res) => {
+	pool.request().query('select * from libras.Categoria', (err, sqlRes) => {
+		if (err) res.status(500).send({ status: 500, err: err })
+		else
+			res.status(200).send({
+				linhas: sqlRes.rowsAffected[0],
+				resultado: sqlRes.recordset,
+			})
+	})
+})
+
 app.get('/licoes', (req, res) => {
 	pool.request().query('select * from libras.Licao', (err, sqlRes) => {
 		if (err) res.status(500).send({ status: 500, err: err })
@@ -146,7 +156,6 @@ app.get('/licoes/*', (req, res) => {
 })
 
 app.post('/login', (req, res) => {
-	console.log(req.headers)
 	let username = req.body.username
 	let password = req.body.password
 
@@ -234,9 +243,6 @@ app.post('/cadastro', (req, res) => {
 					let responseMessage = sqlRes.recordset[0].responseMessage
 
 					let resString = responseMessage + ''
-
-					console.log(responseMessage)
-					console.log(resString)
 
 					if (resString == 'OK') {
 						if (SEND_CLIENT_ERROR) res.sendStatus(200)
