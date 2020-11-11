@@ -116,6 +116,7 @@ app.get('/usuarios/*', (req, res) => {
 })
 
 app.get('/categorias', (req, res) => {
+	console.log('get categorias')
 	pool.request().query('select * from libras.Categoria', (err, sqlRes) => {
 		if (err) res.status(500).send({ status: 500, err: err })
 		else
@@ -127,14 +128,39 @@ app.get('/categorias', (req, res) => {
 })
 
 app.get('/licoes', (req, res) => {
-	pool.request().query('select * from libras.Licao', (err, sqlRes) => {
-		if (err) res.status(500).send({ status: 500, err: err })
-		else
-			res.status(200).send({
-				linhas: sqlRes.rowsAffected[0],
-				resultado: sqlRes.recordset,
-			})
-	})
+	let categoria = req.query.categoria
+	console.log('get licoes ' + categoria)
+	pool.request()
+		.input('categoria', sql.VarChar(50), categoria)
+		.query(
+			'select * from libras.Licao where categoria = (select codigo from libras.Categoria where nome = @categoria)',
+			(err, sqlRes) => {
+				if (err) res.status(500).send({ status: 500, err: err })
+				else
+					res.status(200).send({
+						linhas: sqlRes.rowsAffected[0],
+						resultado: sqlRes.recordset,
+					})
+			}
+		)
+})
+
+app.get('/sublicao', (req, res) => {
+	let licao = req.query.licao
+	console.log('get sublicoes ' + licao)
+	pool.request()
+		.input('licao', sql.Int, licao)
+		.query(
+			'select * from libras.SubLicao s where s.codigo in (select subLicao from libras.LicaoSubLicao where licao = @licao)',
+			(err, sqlRes) => {
+				if (err) res.status(500).send({ status: 500, err: err })
+				else
+					res.status(200).send({
+						linhas: sqlRes.rowsAffected[0],
+						resultado: sqlRes.recordset,
+					})
+			}
+		)
 })
 
 app.get('/licoes/*', (req, res) => {
@@ -185,7 +211,7 @@ app.post('/login', (req, res) => {
 		)
 })
 
-app.post('/avancar', (req, res) => {
+/*app.post('/avancar', (req, res) => {
 	let username = req.body.username
 	let password = req.body.password
 
@@ -213,7 +239,7 @@ app.post('/avancar', (req, res) => {
 				}
 			}
 		)
-})
+})*/
 
 app.post('/cadastro', (req, res) => {
 	let username = req.body.username
