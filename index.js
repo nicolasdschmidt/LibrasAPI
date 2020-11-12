@@ -2,6 +2,7 @@ const express = require('express')
 const sql = require('mssql')
 const bodyparser = require('body-parser')
 const fs = require('fs')
+const utf8 = require('utf8');
 
 const SEND_CLIENT_ERROR = false
 
@@ -304,12 +305,32 @@ app.get('/palavras/*', (req, res) => {
 	pool.request()
 		.input('letra', sql.Char, letra)
 		.query(
-			'select * from BD19191.libras.PalavraDicionario where inicial = @letra',
+			'select palavra from BD19191.libras.Palavras where letraInicial = @letra',
 			(err, sqlRes) => {
 				if (err) res.status(500).send({ status: 500, err: err })
 				else
 					res.status(200).send({
 						palavras: sqlRes.recordset,
+					})
+			}
+		)
+})
+
+
+app.get('/dados_palavra/*', (req, res) => {
+	let palavra = req.url.replace('/dados_palavra/?palavra=', '').trim()
+
+	console.log(palavra)
+
+	pool.request()
+		.input('palavra', sql.VarChar, palavra)
+		.query(
+			'select * from BD19191.libras.Palavras where palavra = @palavra',
+			(err, sqlRes) => {
+				if (err) res.status(500).send({ status: 500, err: err })
+				else
+					res.status(200).send({
+						palavras: sqlRes.recordset[0],
 					})
 			}
 		)
