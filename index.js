@@ -298,4 +298,22 @@ app.post('/cadastro', (req, res) => {
 		)
 })
 
+app.get('/palavras/*', (req, res) => {
+	let letra = req.url.replace('/palavras/?letra=', '').trim()
+
+	pool.request()
+		.input('letra', sql.Char, letra)
+		.query(
+			'select * from BD19191.libras.PalavraDicionario where inicial = @letra',
+			(err, sqlRes) => {
+				if (err) res.status(500).send({ status: 500, err: err })
+				else
+					res.status(200).send({
+						palavras: sqlRes.recordset,
+					})
+			}
+		)
+})
+
+
 app.listen(port, () => console.log(`Listening at http://localhost:${port}`))
