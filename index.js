@@ -336,5 +336,52 @@ app.get('/dados_palavra/*', (req, res) => {
 		)
 })
 
+app.post('/feedback', (req, res) => {
+	let user = req.body.user
+	let tipo = req.body.tipo
+	let desc = req.body.descricao
+
+	// console.log(req)
+
+	pool.request()
+		.input('user', sql.NVarChar(20), user)
+		.input('tipo', sql.NVarChar(100), tipo)
+		.input('descricao', sql.NVarChar(50), desc)
+		.query(
+			"insert into BD19191.libras.FeedBack values (@user, @tipo, @descricao)",
+			(err, sqlRes) => {
+				if (err) res.status(500).send({ status: 500, err: err })
+				else {
+					let responseMessage = sqlRes.recordset
+
+					let resString = responseMessage + ''
+
+					if (resString == 'OK') {
+						if (SEND_CLIENT_ERROR) res.sendStatus(200)
+						else res.status(200).send({ status: 200 })
+					} else if (
+						resString.startsWith(
+							'Violation of UNIQUE KEY constraint'
+						)
+					)
+						if (SEND_CLIENT_ERROR)
+							res.status(409).send('Nome de usuário já existe')
+						else
+							res.status(200).send({
+								status: 409,
+								err: 'Nome de usuário já existe',
+							})
+					else {
+						if (SEND_CLIENT_ERROR) res.status(401).send(resString)
+						else
+							res.status(200).send({
+								status: 401,
+								err: resString,
+							})
+					}
+				}
+			}
+		)
+})
 
 app.listen(port, () => console.log(`Listening at http://localhost:${port}`))
