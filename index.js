@@ -2,7 +2,7 @@ const express = require('express')
 const sql = require('mssql')
 const bodyparser = require('body-parser')
 const fs = require('fs')
-const utf8 = require('utf8');
+const utf8 = require('utf8')
 
 const SEND_CLIENT_ERROR = false
 
@@ -299,13 +299,15 @@ app.post('/cadastro', (req, res) => {
 		)
 })
 
-app.get('/palavras/*', (req, res) => {
-	let letra = req.url.replace('/palavras/?letra=', '').trim()
+app.get('/palavras', (req, res) => {
+	let letra = req.query.letra
+
+	console.log('get palavras ' + letra)
 
 	pool.request()
 		.input('letra', sql.Char, letra)
 		.query(
-			'select palavra from BD19191.libras.Palavras where letraInicial = @letra',
+			'select palavra from libras.Palavras where letraInicial = @letra',
 			(err, sqlRes) => {
 				if (err) res.status(500).send({ status: 500, err: err })
 				else
@@ -316,16 +318,15 @@ app.get('/palavras/*', (req, res) => {
 		)
 })
 
+app.get('/palavra', (req, res) => {
+	let palavra = req.query.palavra
 
-app.get('/dados_palavra/*', (req, res) => {
-	let palavra = req.url.replace('/dados_palavra/?palavra=', '').trim()
-
-	console.log(palavra)
+	console.log('get palavra ' + palavra)
 
 	pool.request()
 		.input('palavra', sql.VarChar, palavra)
 		.query(
-			'select * from BD19191.libras.Palavras where palavra = @palavra',
+			'select * from libras.Palavras where palavra = @palavra',
 			(err, sqlRes) => {
 				if (err) res.status(500).send({ status: 500, err: err })
 				else
@@ -341,14 +342,12 @@ app.post('/feedback', (req, res) => {
 	let tipo = req.body.tipo
 	let desc = req.body.descricao
 
-	// console.log(req)
-
 	pool.request()
 		.input('user', sql.NVarChar(20), user)
 		.input('tipo', sql.NVarChar(100), tipo)
 		.input('descricao', sql.NVarChar(50), desc)
 		.query(
-			"insert into BD19191.libras.FeedBack values (@user, @tipo, @descricao)",
+			'insert into libras.FeedBack values (@user, @tipo, @descricao)',
 			(err, sqlRes) => {
 				if (err) res.status(500).send({ status: 500, err: err })
 				else {
