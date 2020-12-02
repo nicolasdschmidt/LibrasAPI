@@ -185,6 +185,8 @@ app.post('/login', (req, res) => {
 	let username = req.body.username
 	let password = req.body.password
 
+	console.log('post login usuario ' + username)
+
 	pool.request()
 		.input('username', sql.NVarChar(20), username)
 		.input('password', sql.NVarChar(50), password)
@@ -258,7 +260,7 @@ app.post('/cadastro', (req, res) => {
 	let fullName = req.body.fullname
 	let password = req.body.password
 
-	console.log('cadastro ', username + ' (' + fullName + ') ' + password)
+	console.log('cadastro ', username + ' (' + fullName + ')')
 
 	if (password.length < 8) {
 		if (SEND_CLIENT_ERROR)
