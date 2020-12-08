@@ -42,49 +42,6 @@ app.get('/usuarios', (req, res) => {
 	})
 })
 
-app.get('/usuarios/*/nivel/', (req, res) => {
-	let usuario = req.url
-		.replace('/usuarios/', '')
-		.replace('/nivel/', '')
-		.replace('/nivel', '')
-		.trim()
-
-	pool.request()
-		.input('usuario', sql.VarChar(20), usuario)
-		.query(
-			'select licao from libras.UsuarioLicao where usuario = @usuario',
-			(err, sqlRes) => {
-				if (err) res.status(500).send({ status: 500, err: err })
-				else
-					res.status(200).send({
-						linhas: sqlRes.rowsAffected[0],
-						resultado: sqlRes.recordset[0],
-					})
-			}
-		)
-})
-
-app.get('/usuarios/*/licoes', (req, res) => {
-	let usuario = req.url
-		.replace('/usuarios/', '')
-		.replace('/licoes', '')
-		.trim()
-
-	pool.request()
-		.input('usuario', sql.VarChar(20), usuario)
-		.query(
-			'select * from libras.Licao where codigo <= (select licao from libras.UsuarioLicao where usuario = @usuario)',
-			(err, sqlRes) => {
-				if (err) res.status(500).send({ status: 500, err: err })
-				else
-					res.status(200).send({
-						linhas: sqlRes.rowsAffected[0],
-						resultado: sqlRes.recordset[0],
-					})
-			}
-		)
-})
-
 app.get('/usuarios/*', (req, res) => {
 	let id = req.url.replace('/usuarios/', '').trim()
 	pool.request()
@@ -163,13 +120,37 @@ app.get('/sublicao', (req, res) => {
 		)
 })
 
-app.get('/licoes/*', (req, res) => {
-	let licao = parseInt(req.url.replace('/licoes/', '').trim())
+app.post('/concluir', (req, res) => {
+	let usuario = req.body.username
+	let licao = req.body.licao
+
+	console.log(`post concluir licao ${licao}, usuario ${usuario}`)
 
 	pool.request()
+		.input('username', sql.NVarChar(20), usuario)
 		.input('licao', sql.Int, licao)
 		.query(
-			'select * from libras.LicaoSubLicao where licao = @licao',
+			'insert into libras.UsuarioLicao values ((select userId from libras.Usuario where nomeUsuario = @username), @licao)',
+			(err, sqlRes) => {
+				if (err) res.status(500).send({ status: 500, err: err })
+				else
+					res.status(200).send({
+						linhas: sqlRes.rowsAffected[0],
+						resultado: sqlRes.recordset,
+					})
+			}
+		)
+})
+
+app.get('/usuariolicao', (req, res) => {
+	let usuario = req.query.username
+
+	console.log(`get licoes concluidas usuario ${usuario}`)
+
+	pool.request()
+		.input('username', sql.NVarChar(20), usuario)
+		.query(
+			'select licao from libras.UsuarioLicao where usuario = (select userId from libras.Usuario where nomeUsuario = @username)',
 			(err, sqlRes) => {
 				if (err) res.status(500).send({ status: 500, err: err })
 				else
@@ -213,54 +194,12 @@ app.post('/login', (req, res) => {
 		)
 })
 
-app.post('/concluir', (req, res) => {
-	let usuario = req.body.username
-	let licao = req.body.licao
-
-	console.log(`post concluir licao ${licao}, usuario ${usuario}`)
-
-	pool.request()
-		.input('username', sql.NVarChar(20), usuario)
-		.input('licao', sql.Int, licao)
-		.query(
-			'insert into libras.UsuarioLicao values ((select userId from libras.Usuario where nomeUsuario = @username), @licao)',
-			(err, sqlRes) => {
-				if (err) res.status(500).send({ status: 500, err: err })
-				else
-					res.status(200).send({
-						linhas: sqlRes.rowsAffected[0],
-						resultado: sqlRes.recordset,
-					})
-			}
-		)
-})
-
-app.get('/usuariolicao', (req, res) => {
-	let usuario = req.query.username
-
-	console.log(`get licoes concluidas usuario ${usuario}`)
-
-	pool.request()
-		.input('username', sql.NVarChar(20), usuario)
-		.query(
-			'select licao from libras.UsuarioLicao where usuario = (select userId from libras.Usuario where nomeUsuario = @username)',
-			(err, sqlRes) => {
-				if (err) res.status(500).send({ status: 500, err: err })
-				else
-					res.status(200).send({
-						linhas: sqlRes.rowsAffected[0],
-						resultado: sqlRes.recordset,
-					})
-			}
-		)
-})
-
 app.post('/cadastro', (req, res) => {
 	let username = req.body.username
 	let fullName = req.body.fullname
 	let password = req.body.password
 
-	console.log('cadastro ', username + ' (' + fullName + ')')
+	console.log('cadastro ' + username + ' (' + fullName + ')')
 
 	if (password.length < 8) {
 		if (SEND_CLIENT_ERROR)
@@ -366,33 +305,9 @@ app.post('/feedback', (req, res) => {
 			(err, sqlRes) => {
 				if (err) res.status(500).send({ status: 500, err: err })
 				else {
-					let responseMessage = sqlRes.recordset
-
-					let resString = responseMessage + ''
-
-					if (resString == 'OK') {
-						if (SEND_CLIENT_ERROR) res.sendStatus(200)
-						else res.status(200).send({ status: 200 })
-					} else if (
-						resString.startsWith(
-							'Violation of UNIQUE KEY constraint'
-						)
-					)
-						if (SEND_CLIENT_ERROR)
-							res.status(409).send('Nome de usuário já existe')
-						else
-							res.status(200).send({
-								status: 409,
-								err: 'Nome de usuário já existe',
-							})
-					else {
-						if (SEND_CLIENT_ERROR) res.status(401).send(resString)
-						else
-							res.status(200).send({
-								status: 401,
-								err: resString,
-							})
-					}
+					res.status(200).send({
+						status: 200,
+					})
 				}
 			}
 		)
